@@ -12,6 +12,7 @@ type Config struct {
 	MqttServer    string `env:"MQTT_SERVER"`
 	MqttTopic     string `env:"MQTT_TOPIC"`
 	BotDb         string `env:"BOT_DB"`
+	TemplateDir   string `env:"TEMPLATE_DIR"`
 }
 
 func LoadConfig() (Config, error) {
