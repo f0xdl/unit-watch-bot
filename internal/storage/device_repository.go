@@ -42,19 +42,34 @@ func (s *GormStorage) UpdateOnline(ctx context.Context, uuid string, at time.Tim
 		Error
 }
 
-func (s *GormStorage) Get(ctx context.Context, uuid string) domain.Device {
+func (s *GormStorage) Get(ctx context.Context, uuid string) (domain.Device, error) {
 	var d Device
 	err := s.db.WithContext(ctx).
-		Preload("Groups").
 		First(&d, "uuid = ?", uuid).
 		Error
 	if err != nil {
-		return domain.Device{}
+		return domain.Device{}, err
 	}
 	return domain.Device{
 		UUID:     d.UUID,
 		Status:   domain.DeviceStatus(d.Status),
 		LastSeen: d.LastSeen,
 		Active:   d.Active,
+	}, nil
+}
+
+func (s *GormStorage) GetChatIds(ctx context.Context, uuid string) ([]int64, error) {
+	var d Device
+	err := s.db.WithContext(ctx).
+		Preload("Groups").
+		First(&d, "uuid = ?", uuid).
+		Error
+	if err != nil {
+		return nil, err
 	}
+	ids := make([]int64, len(d.Groups))
+	for i, g := range d.Groups {
+		ids[i] = g.ChatID
+	}
+	return ids, nil
 }

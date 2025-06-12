@@ -14,8 +14,7 @@ import (
 )
 
 type App struct {
-	cfg   configs.Config
-	store *storage.GormStorage
+	cfg configs.Config
 	//templater   *templates.TemplateService
 	mqttClient  mqtt.Client
 	tbot        *tgbotapi.BotAPI
@@ -54,7 +53,7 @@ func SetupApp() (a *App, err error) {
 		return nil, err
 	}
 
-	mqttHandler := handlers.NewMqttHandler(tbot, templater, cfg.ChatID)
+	mqttHandler := handlers.NewMqttHandler(tbot, templater, store)
 
 	/* TODO: FSM for tbot
 	// FSM для управления состояниями
@@ -69,8 +68,7 @@ func SetupApp() (a *App, err error) {
 	)
 	*/
 	return &App{
-		cfg:   cfg,
-		store: store,
+		cfg: cfg,
 		//templater:   templater,
 		mqttClient:  mqttClient,
 		tbot:        tbot,
