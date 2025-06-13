@@ -3,9 +3,9 @@ package handlers
 import (
 	"context"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/f0xdl/unit-watch-bot/internal/domain"
-	"github.com/f0xdl/unit-watch-bot/internal/storage"
 	"github.com/f0xdl/unit-watch-bot/internal/templates"
+	"github.com/f0xdl/unit-watch-lib/domain"
+	"github.com/f0xdl/unit-watch-lib/storage"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/rs/zerolog/log"
 	"strconv"
@@ -38,34 +38,34 @@ func (mh *MqttHandler) SubscribeTopics(client mqtt.Client) {
 	}
 }
 
-// StatusHandler topic: device/{DEVICE-UUID}/status
+// StatusHandler topic: device/{DEVICE-UID}/status
 func (mh *MqttHandler) StatusHandler(_ mqtt.Client, msg mqtt.Message) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	uuid := getUUID(msg)
+	uid := getUID(msg)
 	sInt, err := strconv.Atoi(string(msg.Payload()))
 	if err != nil {
 		log.Error().Msgf("error converting status to int: %s", string(msg.Payload()))
 	}
 	status := domain.ParseDeviceStatus(sInt)
 
-	device, err := mh.deviceStore.Get(ctx, uuid)
+	device, err := mh.deviceStore.Get(ctx, uid)
 	if err != nil {
-		log.Error().Err(err).Str("uuid", uuid).Msg("error getting device")
+		log.Error().Err(err).Str("uid", uid).Msg("error getting device")
 		return
 	}
 	if device.Status == status {
 		log.Warn().
-			Str("uuid", uuid).
+			Str("uid", uid).
 			Any("status", device.Status).
 			Msg("device status not changed")
 		return
 	}
 
-	chatIds, err := mh.deviceStore.GetChatIds(ctx, uuid)
+	chatIds, err := mh.deviceStore.GetChatIds(ctx, uid)
 	if err != nil {
-		log.Error().Err(err).Str("uuid", uuid).Msg("error getting chats")
+		log.Error().Err(err).Str("uid", uid).Msg("error getting chats")
 		return
 	}
 
@@ -73,7 +73,7 @@ func (mh *MqttHandler) StatusHandler(_ mqtt.Client, msg mqtt.Message) {
 		"Online":      device.Online,
 		"Label":       device.Label,
 		"Point":       device.Point,
-		"UUID":        device.UUID,
+		"UID":         device.UID,
 		"OldStatus":   device.Status,
 		"NewStatus":   status,
 		"ChangedAt":   templates.FormatChangedAt(time.Now(), "uk"),
@@ -102,48 +102,48 @@ func (mh *MqttHandler) StatusHandler(_ mqtt.Client, msg mqtt.Message) {
 		}
 		log.Info().Int64("chatId", chatId).Msg("message sent")
 	}
-	err = mh.deviceStore.UpdateStatus(ctx, uuid, status)
+	err = mh.deviceStore.UpdateStatus(ctx, uid, status)
 	if err != nil {
-		log.Error().Err(err).Str("uuid", uuid).Msg("error updating status")
+		log.Error().Err(err).Str("uid", uid).Msg("error updating status")
 		return
 	}
 }
 
-// OnlineHandler topic: device/{DEVICE-UUID}/online
+// OnlineHandler topic: device/{DEVICE-UID}/online
 func (mh *MqttHandler) OnlineHandler(_ mqtt.Client, msg mqtt.Message) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	uuid := getUUID(msg)
+	uid := getUID(msg)
 	online, err := strconv.ParseBool(string(msg.Payload()))
 	if err != nil {
 		log.Error().Msgf("error converting status to int: %s", string(msg.Payload()))
 	}
 
-	device, err := mh.deviceStore.Get(ctx, uuid)
+	device, err := mh.deviceStore.Get(ctx, uid)
 	if err != nil {
-		log.Error().Err(err).Str("uuid", uuid).Msg("error getting device")
+		log.Error().Err(err).Str("uid", uid).Msg("error getting device")
 		return
 	}
 
 	if device.Online == online {
 		log.Warn().
-			Str("uuid", uuid).
+			Str("uid", uid).
 			Any("status", device.Status).
 			Msg("device already online")
 		return
 	}
 
-	chatIds, err := mh.deviceStore.GetChatIds(ctx, uuid)
+	chatIds, err := mh.deviceStore.GetChatIds(ctx, uid)
 	if err != nil {
-		log.Error().Err(err).Str("uuid", uuid).Msg("error getting chats")
+		log.Error().Err(err).Str("uid", uid).Msg("error getting chats")
 		return
 	}
 	args := map[string]interface{}{
 		"Online": online,
 		"Label":  device.Label,
 		"Point":  device.Point,
-		"UUID":   device.UUID,
+		"UID":    device.UID,
 	}
 	for k, v := range args {
 		switch v.(type) {
@@ -167,14 +167,14 @@ func (mh *MqttHandler) OnlineHandler(_ mqtt.Client, msg mqtt.Message) {
 		log.Info().Int64("chatId", chatId).Msg("message sent")
 	}
 
-	err = mh.deviceStore.UpdateOnline(ctx, uuid, online)
+	err = mh.deviceStore.UpdateOnline(ctx, uid, online)
 	if err != nil {
-		log.Error().Err(err).Str("uuid", uuid).Msg("error updating status")
+		log.Error().Err(err).Str("uid", uid).Msg("error updating status")
 		return
 	}
 }
 
-func getUUID(msg mqtt.Message) string {
+func getUID(msg mqtt.Message) string {
 	topicParts := strings.Split(msg.Topic(), "/")
 	if len(topicParts) != 3 {
 		log.Error().Msgf("topic format error: %s", msg.Topic())

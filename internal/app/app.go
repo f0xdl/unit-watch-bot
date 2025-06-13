@@ -3,20 +3,27 @@ package app
 import (
 	"context"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/f0xdl/unit-watch-bot/internal/configs"
 	"github.com/f0xdl/unit-watch-bot/internal/handlers"
-	"github.com/f0xdl/unit-watch-bot/internal/storage"
-	"github.com/f0xdl/unit-watch-bot/internal/storage/driver"
 	"github.com/f0xdl/unit-watch-bot/internal/templates"
 	"github.com/f0xdl/unit-watch-bot/internal/tgservice"
+	"github.com/f0xdl/unit-watch-lib/configuration"
+	"github.com/f0xdl/unit-watch-lib/storage"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/rs/zerolog/log"
 	"time"
 )
 
+type Config struct {
+	TelegramToken string `env:"TELEGRAM_TOKEN"`
+	ChatID        int64  `env:"CHAT_ID"`
+	MqttServer    string `env:"MQTT_SERVER"`
+	MqttTopic     string `env:"MQTT_TOPIC"`
+	BotDb         string `env:"BOT_DB"`
+	TemplateDir   string `env:"TEMPLATE_DIR"`
+}
+
 type App struct {
-	cfg configs.Config
-	//templater   *templates.TemplateService
+	cfg         Config
 	mqttClient  mqtt.Client
 	tbot        *tgbotapi.BotAPI
 	mqttHandler *handlers.MqttHandler
@@ -26,18 +33,18 @@ type App struct {
 func SetupApp() (a *App, err error) {
 	//TODO: recovery
 	log.Info().Msg("read configuration")
-	cfg, err := configs.LoadConfig()
+	cfg := &Config{}
+	err = configuration.LoadEnvConfig(cfg)
 	if err != nil {
 		return
 	}
 
 	log.Info().Msg("connect to database")
-	db, err := driver.InitSQLite(cfg.BotDb)
+	store, err := storage.NewGormStorage(cfg.BotDb, nil, true)
 	if err != nil {
 		log.Fatal().Err(err).Msg("error initializing database")
 		return
 	}
-	store := storage.NewGormStorage(db)
 
 	log.Info().Msg("read templates")
 	templater, err := templates.New(cfg.TemplateDir)
