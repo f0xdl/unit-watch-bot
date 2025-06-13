@@ -2,8 +2,8 @@ package tgservice
 
 import (
 	"context"
-	"github.com/f0xdl/unit-watch-bot/internal/storage"
 	"github.com/f0xdl/unit-watch-bot/internal/templates"
+	"github.com/f0xdl/unit-watch-lib/storage"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/rs/zerolog/log"
 )
@@ -41,26 +41,26 @@ func (h *Handler) Handle(update tgbotapi.Update) {
 	}
 
 	switch h.fsm.Get(chatID) {
-	case StateWaitingUUID:
+	case StateWaitingUID:
 		h.respondWithStatus(chatID, text)
 		h.fsm.Set(chatID, StateIdle)
 	}
 }
 
-func (h *Handler) respondWithStatus(chatID int64, uuid string) {
+func (h *Handler) respondWithStatus(chatID int64, uid string) {
 	ctx := context.Background()
-	device, err := h.storage.Get(ctx, uuid)
+	device, err := h.storage.Get(ctx, uid)
 	if err != nil {
 		h.bot.Send(tgbotapi.NewMessage(chatID, err.Error())) //TODO: fix write error to bot
 		return
 	}
-	if device.UUID == "" {
+	if device.UID == "" {
 		h.bot.Send(tgbotapi.NewMessage(chatID, "⚠️ Пристрій не знайдено"))
 		return
 	}
 
 	args := map[string]interface{}{
-		"UUID":     device.UUID,
+		"UID":      device.UID,
 		"Status":   device.Status.String(),
 		"Online":   device.Online,
 		"Label":    device.Label,

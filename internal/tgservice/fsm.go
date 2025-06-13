@@ -5,8 +5,8 @@ import "sync"
 type State string
 
 const (
-	StateIdle        State = "idle"
-	StateWaitingUUID       = "waiting_uuid"
+	StateIdle       State = "idle"
+	StateWaitingUID       = "waiting_uid"
 )
 
 type FSM struct {

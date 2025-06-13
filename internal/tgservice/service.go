@@ -1,8 +1,8 @@
 package tgservice
 
 import (
-	"github.com/f0xdl/unit-watch-bot/internal/storage"
 	"github.com/f0xdl/unit-watch-bot/internal/templates"
+	"github.com/f0xdl/unit-watch-lib/storage"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
