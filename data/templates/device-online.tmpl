@@ -1,0 +1,3 @@
+{{- if eq .Online true -}}🟢 *Online*{{ else -}}🔴 *Offline*{{- end }}
+Name: *{{ .Label }}* \({{ .Point }}\)
+`{{ .UUID }}`

@@ -8,6 +8,7 @@ import (
 	"github.com/f0xdl/unit-watch-bot/internal/storage"
 	"github.com/f0xdl/unit-watch-bot/internal/storage/driver"
 	"github.com/f0xdl/unit-watch-bot/internal/templates"
+	"github.com/f0xdl/unit-watch-bot/internal/tgservice"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/rs/zerolog/log"
 	"time"
@@ -19,6 +20,7 @@ type App struct {
 	mqttClient  mqtt.Client
 	tbot        *tgbotapi.BotAPI
 	mqttHandler *handlers.MqttHandler
+	tgService   *tgservice.Service
 }
 
 func SetupApp() (a *App, err error) {
@@ -52,27 +54,15 @@ func SetupApp() (a *App, err error) {
 	if err != nil {
 		return nil, err
 	}
+	tgService := tgservice.NewService(tbot, store, templater)
 
 	mqttHandler := handlers.NewMqttHandler(tbot, templater, store)
 
-	/* TODO: FSM for tbot
-	// FSM для управления состояниями
-	var botFSM = fsm.NewFSM(
-		"initial",
-		fsm.Events{
-			{Name: "start", Src: []string{"initial"}, Dst: "waiting"},
-			{Name: "message_received", Src: []string{"waiting"}, Dst: "processing"},
-			{Name: "processed", Src: []string{"processing"}, Dst: "waiting"},
-		},
-		fsm.Callbacks{},
-	)
-	*/
 	return &App{
-		cfg: cfg,
-		//templater:   templater,
 		mqttClient:  mqttClient,
 		tbot:        tbot,
 		mqttHandler: mqttHandler,
+		tgService:   tgService,
 	}, nil
 }
 
@@ -80,6 +70,7 @@ func (app *App) Run(ctx context.Context) (err error) {
 	token := app.mqttClient.Connect()
 	token.Wait()
 	app.mqttHandler.SubscribeTopics(app.mqttClient)
+	go app.tgService.Run()
 
 	<-ctx.Done()
 	log.Info().Msg("graceful shutdown")
@@ -98,6 +89,8 @@ func (app *App) Shutdown() chan struct{} {
 	ch := make(chan struct{})
 	go func() {
 		defer close(ch)
+		app.mqttClient.Disconnect(250)
+		app.tbot.StopReceivingUpdates()
 		time.Sleep(time.Second) //TODO: do  graceful shutdown
 	}()
 	return ch

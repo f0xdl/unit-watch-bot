@@ -8,11 +8,8 @@ type Device struct {
 	Active    bool         `json:"active"`
 	Status    DeviceStatus `json:"status"`
 	OwnerId   int64        `json:"owner_id"`
-	LastSeen  time.Time    `json:"online_at"`
-	PointId   int          `json:"point_id"`
+	LastSeen  time.Time    `json:"last_seen"`
+	Point     string       `json:"point"`
 	ExpiresAt time.Time    `json:"expires_at"`
-}
-
-func (d *Device) Online() bool {
-	return time.Now().Sub(d.LastSeen).Minutes() < 5
+	Online    bool         `json:"online"`
 }

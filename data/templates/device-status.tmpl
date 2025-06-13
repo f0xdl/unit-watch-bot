@@ -1,0 +1,5 @@
+📟 {{.UUID}}
+__{{ .Label }} \({{ .Point }}\)__
+{{ if eq .Online true -}} 🟢 *Online*{{ else -}}🔴 *Offline*{{- end }}
+Status: {{.Status}}
+⏱ LastSeenAgo: *{{ .LastSeen }}*

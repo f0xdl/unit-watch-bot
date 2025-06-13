@@ -20,6 +20,6 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error running app")
 	}
-	log.Info().Msg("App stopped")
+	log.Info().Msg("app stopped")
 	return
 }
