@@ -3,20 +3,19 @@ package app
 import (
 	"context"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/f0xdl/unit-watch-bot/internal/configs"
 	"github.com/f0xdl/unit-watch-bot/internal/handlers"
-	"github.com/f0xdl/unit-watch-bot/internal/storage"
-	"github.com/f0xdl/unit-watch-bot/internal/storage/driver"
 	"github.com/f0xdl/unit-watch-bot/internal/templates"
 	"github.com/f0xdl/unit-watch-bot/internal/tgservice"
+	"github.com/f0xdl/unit-watch-lib/configuration"
+	"github.com/f0xdl/unit-watch-lib/storage"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/rs/zerolog/log"
+	"gorm.io/driver/sqlite"
 	"time"
 )
 
 type Config struct {
 	TelegramToken string `env:"TELEGRAM_TOKEN"`
-	ChatID        int64  `env:"CHAT_ID"`
 	MqttServer    string `env:"MQTT_SERVER"`
 	MqttTopic     string `env:"MQTT_TOPIC"`
 	BotDb         string `env:"BOT_DB"`
@@ -41,7 +40,7 @@ func SetupApp() (a *App, err error) {
 	}
 
 	log.Info().Msg("connect to database")
-	store, err := storage.NewGormStorage(cfg.BotDb, nil, true)
+	store, err := storage.NewGormStorage(sqlite.Open(cfg.BotDb), true)
 	if err != nil {
 		log.Fatal().Err(err).Msg("error initializing database")
 		return

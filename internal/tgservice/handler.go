@@ -6,6 +6,7 @@ import (
 	"github.com/f0xdl/unit-watch-lib/storage"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/rs/zerolog/log"
+	"strings"
 )
 
 type Handler struct {
@@ -29,7 +30,7 @@ func (h *Handler) Handle(update tgbotapi.Update) {
 
 	if update.Message.IsCommand() {
 		cmd := update.Message.Command()
-		args := update.Message.CommandArguments()
+		args := strings.TrimSpace(update.Message.CommandArguments())
 
 		switch cmd {
 		case "status":
