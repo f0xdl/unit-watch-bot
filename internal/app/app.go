@@ -26,8 +26,9 @@ type Config struct {
 }
 
 type App struct {
-	cfg  Config
-	mqtt *mqtt_manager.MqttManager
+	cfg                Config
+	mqtt               *mqtt_manager.MqttManager
+	telegramDispatcher *services.EventDispatcher
 }
 
 func SetupApp() (a *App, err error) {
@@ -60,6 +61,7 @@ func SetupApp() (a *App, err error) {
 		return nil, err
 	}
 	notification := services.NewNotificationService(tbot, templater)
+	a.telegramDispatcher = services.NewEventDispatcher(tbot, 3)
 
 	log.Info().Msg("build mqtt client")
 	adapter := mqtt_manager.NewMessageHandlerAdapter
@@ -82,6 +84,7 @@ func (app *App) Run(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
+	app.telegramDispatcher.Start()
 
 	<-ctx.Done()
 	log.Info().Msg("graceful shutdown")
@@ -101,6 +104,7 @@ func (app *App) Shutdown() chan struct{} {
 	go func() {
 		defer close(ch)
 		app.mqtt.Disconnect(1000)
+		app.telegramDispatcher.Stop()
 	}()
 	return ch
 }
