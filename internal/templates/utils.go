@@ -5,9 +5,26 @@ import (
 	"time"
 )
 
-// FormatChangedAt lang:uk,ru,en
-func FormatChangedAt(t time.Time, lang string) string {
-	months := map[string][]string{
+type LangCode string
+
+func LangCodeIsValid(lang string) bool {
+	switch lang {
+	case string(English), string(Ukraine), string(Russian):
+		return true
+	default:
+		return false
+	}
+}
+
+const (
+	English LangCode = "en"
+	Ukraine LangCode = "uk"
+	Russian LangCode = "ru"
+)
+
+// FormatChangedAt format by LangCode
+func FormatChangedAt(t time.Time, lang LangCode) string {
+	months := map[LangCode][]string{
 		"en": {"January", "February", "March", "April", "May", "June",
 			"July", "August", "September", "October", "November", "December"},
 		"ru": {"января", "февраля", "марта", "апреля", "мая", "июня",
@@ -18,7 +35,7 @@ func FormatChangedAt(t time.Time, lang string) string {
 
 	monthNames, ok := months[lang]
 	if !ok {
-		monthNames = months["en"] // fallback
+		panic("invalid lang" + string(lang))
 	}
 
 	day := t.Day()
@@ -30,16 +47,19 @@ func FormatChangedAt(t time.Time, lang string) string {
 	return fmt.Sprintf("%02d %s %d, %02d:%02d", day, month, year, hour, m)
 }
 
-func FormatSeenAgo(t time.Time, lang string) string {
+func FormatSeenAgo(t time.Time, lang LangCode) string {
 	delta := time.Since(t)
 	var templates []string
 	switch lang {
-	case "en":
+	case English:
 		templates = []string{"less than a minute ago", "%d minutes ago", "%d hours ago"}
-	case "ru":
+	case Russian:
 		templates = []string{"меньше минуты назад", "%d мин назад", "%d ч назад"}
-	case "uk":
+	case Ukraine:
 		templates = []string{"менш ніж хвилину тому", "%d хв тому", "%d год тому"}
+	default:
+		panic("invalid lang" + string(lang))
+
 	}
 	switch {
 	case delta < time.Minute:
